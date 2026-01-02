@@ -24,7 +24,7 @@ jobs:
         # MAKE SURE your python file is named "main.py"
         # MAKE SURE your icon is named "app_icon.icns"
         run: |
-          pyinstaller --noconfirm --onedir --windowed --name "AnatoViewer" --icon="icon.png" --clean anatovieer_v2.py
+          pyinstaller --noconfirm --onedir --windowed --name "AnatoViewer" --icon="Anato.png" --clean anatovieer_v2.py
 
       - name: Zip the Result
         run: |
