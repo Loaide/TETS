@@ -1,9 +1,9 @@
-name: Release Mac App
+name: Build Mac App (Fixed)
 
-# This triggers the build ONLY when you create a new Release (tag starting with v)
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -26,18 +26,37 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build with PyInstaller
-        # Make sure your file name is correct here (e.g., main.py or anatovieer_v2.py)
-        # Make sure your icon name is correct here (e.g., icon.png)
+        # We use --onedir because it starts faster and is easier to debug
         run: |
           pyinstaller --noconfirm --onedir --windowed --name "AnatoViewer" --icon="Anato.png" --clean anatovieer_v2.py
 
-      - name: Zip the App
+      - name: 🔧 Fix Permissions & Sign App
+        # THIS IS THE NEW MAGIC STEP
         run: |
-          cd dist
-          zip -r AnatoViewer_Mac.zip AnatoViewer.app
+          # 1. Force the app to be readable and executable by everyone
+          chmod -R 755 dist/AnatoViewer.app
+          
+          # 2. Apply an "Ad-Hoc" signature. 
+          # This doesn't make you a verified developer, but it stops the "App is damaged" error.
+          codesign --force --deep --sign - dist/AnatoViewer.app
+
+      - name: Create DMG (Disk Image)
+        # Instead of a ZIP, we make a DMG. Macs trust DMGs more than Zips.
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "AnatoViewer Installer" \
+            --volicon "icon.png" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "AnatoViewer.app" 200 190 \
+            --hide-extension "AnatoViewer.app" \
+            --app-drop-link 600 185 \
+            "dist/AnatoViewer.dmg" \
+            "dist/AnatoViewer.app"
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/AnatoViewer_Mac.zip
-          path: dist/AnatoViewer_Mac.zip
+          files: dist/AnatoViewer.dmg
